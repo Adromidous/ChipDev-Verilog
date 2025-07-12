@@ -7,55 +7,21 @@ module model #(parameter
     output logic [DATA_WIDTH-1:0] count
 );
 
-reg [$clog2(MAX):0] counter;
-
-enum {RESET, COUNT, STOP} state;
-
+reg counting;
 
 always_ff@ (posedge clk) begin
 
-  case(state)
-  
-    RESET : begin
-      
-      if (start & !reset & !stop) begin
-        state <= COUNT;
-        counter <= counter + 1'b1;
-      end else begin
-        counter <= 'b0;
-      end
-
-    end
-
-    COUNT : begin
-
-      if (reset) begin
-        state <= RESET;
-        counter <= 'b0;
-      end else if (stop) begin
-        state <= STOP;
-      end else begin
-        counter <= (counter == MAX) ? 'b0 : counter + 1'b1;
-      end
-
-    end
-
-    STOP : begin
-      
-      if (reset) begin
-        state <= RESET;
-        counter <= 'b0;
-      end else if (start & !stop) begin
-        state <= COUNT;
-        counter <= (counter == MAX) ? 'b0 : counter + 1'b1;
-      end
-
-    end
-
-  endcase
+  if (reset) begin
+    count <= 'b0;
+    counting <= 1'b0;
+  end else if (stop) begin
+    count <= count;
+    counting <= 1'b0;
+  end else if (start | counting) begin
+    counting <= 1'b1;
+    count <= (count == MAX) ? 'b0 : count + 1'b1;
+  end
 
 end
-
-assign count = counter;
 
 endmodule
