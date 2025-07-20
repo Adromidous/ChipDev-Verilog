@@ -19,6 +19,11 @@ logic [$clog2(DEPTH)-1:0] gray_write_ptr, gray_read_ptr;
 
 reg [WIDTH-1:0] async_fifo_mem [DEPTH-1:0];
 
+
+//2FF SYNCRHONIZER SIGNALS
+logic [$clog2(DEPTH)-1:0] 2ff_gray_write_ptr [0:1]; 
+logic [$clog2(DEPTH)-1:0] 2ff_gray_read_ptr [0:1];
+
 always_ff@ (posedge read_clk, negedge async_rst) begin
 	if (~async_rst) begin
 		read_ptr <= 'b0;
@@ -43,6 +48,26 @@ always_ff@ (posedge write_clk, negedge async_rst) begin
 	end
 end
 
+//2FF SYNCHRONIZER WRITE POINTER
+always_ff@ (posedge write_clk, negedge async_rst) begin
+	if (~async_rst) begin
+		2ff_gray_write_ptr <= 'b0;
+	end else begin
+		2ff_gray_write_ptr[1] <= 2ff_gray_write_ptr[0];
+		2ff_gray_write_ptr[0] <= gray_write_ptr;
+	end
+end
+
+//2FF SYNCHRONIZER READ POINTER
+always_ff@ (posedge read_clk, negedge async_rst) begin
+	if (~async_rst) begin
+		2ff_gray_read_ptr <= 'b0;
+	end else begin
+		2ff_gray_read_ptr[1] <= 2ff_read_write_ptr[0];
+		2ff_gray_read_ptr[0] <= gray_read_ptr;
+	end
+end
+
 //READ PTR GRAY CODE CONVERSION
 gray_code #(
 	.WIDTH($clog2(DEPTH))
@@ -60,5 +85,7 @@ gray_code #(
 );
 
 assign empty = (gray_read_ptr == gray_write_ptr);
+assign full == 
 
 endmodule
+		
