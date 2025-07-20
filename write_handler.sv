@@ -1,22 +1,50 @@
-module write_hander #(
-	parameter WIDTH=4
+module write_handler #(
+	parameter PTR_WIDTH = 16,
 )	(
 
 	input logic clk,
 	input logic rstn,
-	input [WIDTH:0] rd_ptr, //OUTPUT FROM 2FF SYNCHRONIZER - GRAY CODED
-	input [WIDTH:0] wr_ptr, //WRITE POINTER INPUT - GRAY CODED
-	output logic full
+	input [PTR_WIDTH:0] rd_ptr, //OUTPUT FROM 2FF SYNCHRONIZER - GRAY CODED
+	input increment,
+	output logic full,
+	output logic [PTR_WIDTH:0] bin_wrt_ptr,
+	output logic [PTR_WIDTH:0] gray_wr_ptr
 );
+
+//2FF SYNCRHONIZER
+reg [PTR_WIDTH:0] 2ff_write_ptr_sync [0:1];
 
 always_ff@ (posedge clk, negedge rstn) begin
 	if (~rstn) begin
 		full <= 1'b0;
 	end else begin
-		full <= (wr_ptr == {~rd_ptr[WIDTH:WIDTH-1], rd_ptr[WIDTH-2:0]}; 		
+		full <= (wr_ptr == {~rd_ptr[PTR_WIDTH:PTR_WIDTH-1], rd_ptr[PTR_WIDTH-2:0]}; 		
 	end
 end
 
+always_ff@ (posedge clk, negedge rstn) begin
+	if (~rstn) begin
+		2ff_write_ptr_sync <= 'b0;
+	end else begin
+		2ff_write_ptr_sync[1] <= 2ff_write_ptr_sync[0];
+		2ff_write_ptr_sync[0] <= gray_wr_ptr;
+	end
+end
 
+always_ff@ (posedge clk, negedge rstn) begin
+	if (~rstn) begin
+		bin_wrt_ptr <= 'b0;
+	end else begin
+		if (increment) bin_wrt_ptr <= bin_wrt_ptr + 1'b1;
+	end
+
+end
+
+gray_code #(
+		.WIDTH(PTR_WIDTH)
+)	(
+		.binary_value(bin_wrt_ptr),
+		.gray_value(gray_wr_ptr)
+);
 
 endmodule
