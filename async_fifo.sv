@@ -18,7 +18,7 @@ logic [$clog2(DEPTH):0] gray_wrt_ptr, gray_rd_ptr;
 
 logic empty_out, full_out;
 
-fifo_mem #(
+async_fifo_mem #(
 	.WIDTH(32),
 	.DEPTH(16),
 )  mem1 (
