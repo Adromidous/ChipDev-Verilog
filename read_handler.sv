@@ -7,8 +7,8 @@ module read_handler #(
 	input [PTR_WIDTH:0] wr_ptr, //OUTPUT FROM 2FF SYNCHRONIZER - GRAY CODED
 	input increment,
 	output logic empty,
-	output logic [PTR_WIDTH:0] bin_rd_ptr,
-	output logic [PTR_WIDTH:0] gray_rd_ptr
+	output logic [PTR_WIDTH:0] bin_rd_ptr, //GOES TO FIFO MEM
+	output logic [PTR_WIDTH:0] gray_rd_ptr //GOES TO WRITE HANDLER
 );
 
 reg [PTR_WIDTH:0] 2ff_read_ptr_sync [0:1];
