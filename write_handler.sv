@@ -7,8 +7,8 @@ module write_handler #(
 	input [PTR_WIDTH:0] rd_ptr, //OUTPUT FROM 2FF SYNCHRONIZER - GRAY CODED
 	input increment,
 	output logic full,
-	output logic [PTR_WIDTH:0] bin_wrt_ptr,
-	output logic [PTR_WIDTH:0] gray_wr_ptr
+	output logic [PTR_WIDTH:0] bin_wrt_ptr, //GOES TO FIFO MEM
+	output logic [PTR_WIDTH:0] gray_wrt_ptr //GOES TO READ HANDLER
 );
 
 //2FF SYNCRHONIZER
@@ -27,7 +27,7 @@ always_ff@ (posedge clk, negedge rstn) begin
 		2ff_write_ptr_sync <= 'b0;
 	end else begin
 		2ff_write_ptr_sync[1] <= 2ff_write_ptr_sync[0];
-		2ff_write_ptr_sync[0] <= gray_wr_ptr;
+		2ff_write_ptr_sync[0] <= gray_wrt_ptr;
 	end
 end
 
@@ -44,7 +44,7 @@ gray_code #(
 		.WIDTH(PTR_WIDTH)
 )	(
 		.binary_value(bin_wrt_ptr),
-		.gray_value(gray_wr_ptr)
+		.gray_value(gray_wrt_ptr)
 );
 
 endmodule
