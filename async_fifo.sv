@@ -1,46 +1,69 @@
-module async_fifo #(
+module async_FIFO #(
 	parameter WIDTH = 32,
 	parameter DEPTH = 16
 )	(
-	input logic read_clk,
-	input logic write_clk,
-	input logic async_rst,
-	input logic [WIDTH-1:0] data_in,
+	input logic wclk,
+	input logic rclk,
+	input logic rst,
 	input logic read_en,
 	input logic write_en,
-	input logic [$clog2(DEPTH):0] waddr,
-	input logic [$clog2(DEPTH):0] raddr,
+	output logic [WIDTH-1:0] data_in,
 	output logic [WIDTH-1:0] data_out,
-	output logic full,
-	output logic empty
+	output logic empty,
+	output logic full
 );
 
+logic [$clog2(DEPTH):0] bin_wrt_ptr, bin_rd_ptr;
+logic [$clog2(DEPTH):0] gray_wrt_ptr, gray_rd_ptr;
 
-//MEMORY INSTANTIATION
-reg [WIDTH-1:0] async_fifo_mem [DEPTH-1:0]; //TRUE DUAL PORT RAM SHOULD BE INSTANTIATED HERE 
+logic empty_out, full_out;
 
-//2FF SYNCRHONIZER SIGNALS
-logic [$clog2(DEPTH):0] 2ff_gray_write_ptr; 
-logic [$clog2(DEPTH):0] 2ff_gray_read_ptr;
+fifo_mem #(
+	.WIDTH(32),
+	.DEPTH(16),
+)  mem1 (
+	.read_clk(rclk),
+	.write_clk(wclk),
+	.async_rst(rst),
+	.data_in(data_in),
+	.read_en(read_en),
+	.write_en(write_en),
+	.full(full),
+	.empty(empty),
+	.waddr(bin_wrt_ptr),
+	.raddr(bin_rd_ptr),
+	.data_out(data_out)
+);
 
-//READ FROM MEMORY USING BINARY READ POINTER
-always_ff@ (posedge read_clk, negedge async_rst) begin
-	if (~async_rst) begin
-		data_out <= 'b0;
-	end else begin
-		if (read_en & !empty) begin
-			data_out <= async_fifo_mem[raddr] 
-		end else begin
-			data_out <= 'b0;
-		end
-	end
-end
+write_handler #(
+	.PTR_WIDTH($clog2(DEPTH)),
+)  wh0  (
+	//INPUTS
+	.clk(wclk),
+	.rstn(rst),
+	.rd_ptr(gray_rd_ptr),
+	.increment(write_en),
+	//OUTPUTS
+	.full(full_out),
+	.bin_wrt_ptr(bin_wrt_ptr),
+	.gray_wrt_ptr(gray_wrt_ptr)
+);
 
-//WRITE TO MEMORY USING BINARY WRITE POINTER
-always_ff@ (posedge write_clk, negedge async_rst) begin
-	if (write_en & !full &async_rst) begin
-		async_fifo_mem[waddr] <= data_in;
-	end
-end
+read_handler #(
+	.PTR_WIDTH($clog2(DEPTH))
+)  rh0  (
+	//INPUTS
+	.clk(rclk),
+	.rstn(rst),
+	.wr_ptr(gray_wrt_ptr),
+	.increment(read_en),
+	//OUTPUTS
+	.empty(empty_out),
+	.bin_rd_ptr(bin_rd_ptr),
+	.gray_rd_ptr(gray_rd_ptr)
+);
+
+assign empty = empty_out;
+assign full = full_out;
 
 endmodule
